@@ -271,3 +271,10 @@ class ChatOllamaOptions extends ChatModelOptions {
     );
   }
 }
+
+class ChatOllamaFunctionOptions extends ChatModelOptions {
+  const ChatOllamaFunctionOptions(
+      {required this.options, super.tools, super.toolChoice});
+
+  final ChatOllamaOptions options;
+}

@@ -10,13 +10,13 @@ import 'mappers.dart';
 import 'types.dart';
 import 'chat_models.dart';
 
-class OllamaFunction extends BaseChatModel<ChatOllamaFunctionOptions> {
-  OllamaFunction({
+class OllamaTools extends BaseChatModel<ChatOllamaToolOptions> {
+  OllamaTools({
     final String baseUrl = 'http://localhost:11434/api',
     final Map<String, String>? headers,
     final Map<String, dynamic>? queryParams,
     final http.Client? client,
-    super.defaultOptions = const ChatOllamaFunctionOptions(
+    super.defaultOptions = const ChatOllamaToolOptions(
       options: ChatOllamaOptions(model: 'llama3'),
     ),
   }) : _client = OllamaClient(
@@ -33,18 +33,19 @@ class OllamaFunction extends BaseChatModel<ChatOllamaFunctionOptions> {
   @override
   Future<ChatResult> invoke(
     PromptValue input, {
-    ChatOllamaFunctionOptions? options,
+    ChatOllamaToolOptions? options,
   }) async {
+    final finalInput = (options ?? defaultOptions).formatTemplate(input);
     final id = _uuid.v4();
     final completion = await _client.generateChatCompletion(
-      request: _generateCompletionRequest(input.toChatMessages(),
+      request: _generateCompletionRequest(finalInput.toChatMessages(),
           options: options?.options),
     );
     return completion.toChatResult(id);
   }
 
   @override
-  String get modelType => 'ollama-function';
+  String get modelType => 'ollama-tools';
 
   GenerateChatCompletionRequest _generateCompletionRequest(
     final List<ChatMessage> messages, {
@@ -100,7 +101,7 @@ class OllamaFunction extends BaseChatModel<ChatOllamaFunctionOptions> {
   @override
   Future<List<int>> tokenize(
     PromptValue promptValue, {
-    ChatOllamaFunctionOptions? options,
+    ChatOllamaToolOptions? options,
   }) {
     // TODO: implement tokenize
     throw UnimplementedError();
@@ -113,16 +114,16 @@ void main() {
 }
 
 void getTool() async {
-  final model = OllamaFunction(
-    defaultOptions: const ChatOllamaFunctionOptions(
-      options: ChatOllamaOptions(model: 'llama3:8b'),
+  final model = OllamaTools(
+    defaultOptions: const ChatOllamaToolOptions(
+      options: ChatOllamaOptions(
+        model: 'llama3:8b',
+        format: OllamaResponseFormat.json,
+      ),
       tools: [tool1],
     ),
   );
   final messages = [
-    ChatMessage.system(
-      'You have access to the following tools: {name:get_current_weather,description:Get the current weather in a given location}You must always select one of the above tools and respond with only a JSON object matching the following schema: {tool: name of the selected tool}',
-    ),
     ChatMessage.humanText("What's the weather in Vellore,India?"),
   ];
   final prompt = PromptValue.chat(messages);

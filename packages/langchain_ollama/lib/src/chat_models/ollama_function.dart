@@ -41,7 +41,28 @@ class OllamaTools extends BaseChatModel<ChatOllamaToolOptions> {
       request: _generateCompletionRequest(finalInput.toChatMessages(),
           options: options?.options),
     );
-    return completion.toChatResult(id);
+
+    final finalCompletion = completion.toChatResult(id);
+    final contentString = finalCompletion.output.content;
+    final Map<String, dynamic> parsedContent = jsonDecode(contentString);
+    final toolName = parsedContent['tool'];
+    final Map<String, dynamic> toolArguments = parsedContent['tool_input'];
+    final String argumentsRaw = jsonEncode(toolArguments);
+    final tool = AIChatMessageToolCall(
+      id: _uuid.v4(),
+      name: toolName.toString(),
+      arguments: toolArguments,
+      argumentsRaw: argumentsRaw,
+    );
+    final toolMessage = AIChatMessage(content: '', toolCalls: [tool]);
+    final finalResult = ChatResult(
+      id: id,
+      output: toolMessage,
+      finishReason: finalCompletion.finishReason,
+      metadata: finalCompletion.metadata,
+      usage: finalCompletion.usage,
+    );
+    return finalResult;
   }
 
   @override
